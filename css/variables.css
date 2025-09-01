@@ -1,0 +1,60 @@
+:root {
+    /* Colors */
+    --bg: #0a0a0d;
+    --bg-elev: #0f0f14;
+    --surface: #14141b;
+    --border: #232334;
+    --text: #ececf1;
+    --muted: #a6a6b2;
+    --primary: #d6b25b;
+    /* refined gold */
+    --primary-contrast: #0b0b0f;
+    --accent: #f0e6c0;
+
+    /* Gradients */
+    --grad-gold: linear-gradient(145deg, #d6b25b 0%, #f2df8b 100%);
+    --grad-bg: radial-gradient(1200px 800px at 85% -10%, rgba(214, 178, 91, 0.08), transparent 60%), radial-gradient(800px 600px at 10% 120%, rgba(255, 255, 255, 0.04), transparent 60%);
+
+    /* Typography */
+    --ff-sans: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    --ff-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+    --fs-xs: 12px;
+    --fs-sm: 14px;
+    --fs-md: 16px;
+    --fs-lg: 18px;
+    --fs-xl: 22px;
+    --fs-2xl: clamp(28px, 4vw, 40px);
+    --fs-3xl: clamp(40px, 6vw, 68px);
+
+    /* Spacing */
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+    --space-20: 80px;
+
+    /* Radius & Shadows */
+    --radius-sm: 10px;
+    --radius: 14px;
+    --radius-lg: 20px;
+    --shadow-elev: 0 12px 40px rgba(0, 0, 0, .35);
+
+    /* Layout */
+    --container: 1140px;
+
+    /* Motion */
+    --ease: cubic-bezier(.2, .8, .2, 1);
+    --speed-fast: .18s;
+    --speed: .28s;
+    --speed-slow: .6s;
+}
+
+body.theme-dark {
+    background: var(--grad-bg), var(--bg);
+    color: var(--text);
+}
