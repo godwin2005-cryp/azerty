@@ -6,6 +6,26 @@
         toggle.addEventListener('click', () => {
             const open = menu.classList.toggle('open');
             toggle.setAttribute('aria-expanded', String(open));
+            document.body.classList.toggle('no-scroll', open);
+        });
+
+        // Close on link click
+        menu.addEventListener('click', (e) => {
+            const target = e.target;
+            if (target && target.closest('a')) {
+                menu.classList.remove('open');
+                document.body.classList.remove('no-scroll');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        // Close on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && menu.classList.contains('open')) {
+                menu.classList.remove('open');
+                document.body.classList.remove('no-scroll');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
         });
     }
 
@@ -44,4 +64,57 @@
             if (d.open) faqs.forEach(o => { if (o !== d) o.open = false; });
         });
     });
+
+    // Contact form -> Telegram Bot API
+    const form = document.getElementById('contact-form');
+    const status = document.getElementById('form-status');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const BOT_TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN_HERE'; // TODO: replace
+            const CHAT_ID = 'YOUR_CHAT_ID_HERE'; // TODO: replace (e.g., 12345678)
+
+            if (!BOT_TOKEN || !CHAT_ID || BOT_TOKEN.includes('YOUR_') || CHAT_ID.includes('YOUR_')) {
+                status && (status.textContent = 'Configuration missing: please set Telegram BOT_TOKEN and CHAT_ID.');
+                return;
+            }
+
+            const formData = new FormData(form);
+            const payload = {
+                name: formData.get('name')?.toString().trim() || '',
+                telegram: formData.get('telegram')?.toString().trim() || '',
+                email: formData.get('email')?.toString().trim() || '',
+                instagram: formData.get('instagram')?.toString().trim() || '',
+                message: formData.get('message')?.toString().trim() || ''
+            };
+
+            // Basic validation
+            if (!payload.name || !payload.email || !payload.message) {
+                status && (status.textContent = 'Please fill in Name, Email, and Message.');
+                return;
+            }
+
+            const text = `New contact message from LadyLuxury site:%0A` +
+                `Name: ${encodeURIComponent(payload.name)}%0A` +
+                (payload.telegram ? `Telegram: ${encodeURIComponent(payload.telegram)}%0A` : '') +
+                `Email: ${encodeURIComponent(payload.email)}%0A` +
+                (payload.instagram ? `Instagram: ${encodeURIComponent(payload.instagram)}%0A` : '') +
+                `Message:%0A${encodeURIComponent(payload.message)}`;
+
+            status && (status.textContent = 'Sending...');
+            try {
+                const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}`;
+                const res = await fetch(url, { method: 'GET' });
+                if (!res.ok) throw new Error('Network response was not ok');
+                const data = await res.json();
+                if (!data.ok) throw new Error(data.description || 'Telegram API error');
+                status && (status.textContent = 'Message sent! We will get back to you soon.');
+                form.reset();
+            } catch (err) {
+                console.error(err);
+                status && (status.textContent = 'Failed to send. Please try again later.');
+            }
+        });
+    }
 })();
