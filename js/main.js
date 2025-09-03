@@ -65,6 +65,46 @@
         });
     });
 
+    // Hide header on scroll down, show on scroll up
+    const header = document.querySelector('.site-header');
+    if (header) {
+        let lastY = window.scrollY;
+        const threshold = 8; // minimal movement before toggling
+        let ticking = false;
+
+        const handle = () => {
+            const y = window.scrollY;
+            // Don't hide when mobile menu is open
+            if (document.body.classList.contains('no-scroll')) {
+                header.classList.remove('hide-on-scroll');
+                lastY = y;
+                ticking = false;
+                return;
+            }
+
+            if (y <= 0) {
+                header.classList.remove('hide-on-scroll');
+            } else if (Math.abs(y - lastY) > threshold) {
+                if (y > lastY && y > 80) {
+                    // scrolling down
+                    header.classList.add('hide-on-scroll');
+                } else {
+                    // scrolling up
+                    header.classList.remove('hide-on-scroll');
+                }
+                lastY = y;
+            }
+            ticking = false;
+        };
+
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(handle);
+                ticking = true;
+            }
+        }, { passive: true });
+    }
+
     // Contact form -> Telegram Bot API
     const form = document.getElementById('contact-form');
     const status = document.getElementById('form-status');
