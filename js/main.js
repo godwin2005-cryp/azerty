@@ -151,15 +151,30 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const BOT_TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN_HERE'; // TODO: replace
-            const CHAT_ID = 'YOUR_CHAT_ID_HERE'; // TODO: replace (e.g., 12345678)
+            // UI: désactiver le bouton pendant l'envoi
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const prevText = submitBtn ? submitBtn.textContent : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.setAttribute('aria-busy', 'true');
+                submitBtn.textContent = 'Envoi…';
+            }
 
-            if (!BOT_TOKEN || !CHAT_ID || BOT_TOKEN.includes('YOUR_') || CHAT_ID.includes('YOUR_')) {
-                status && (status.textContent = 'Configuration missing: please set Telegram BOT_TOKEN and CHAT_ID.');
+            // Utilisation directe de l'API Telegram côté client
+            const BOT_TOKEN = (document.querySelector('meta[name="telegram-bot-token"]')?.content || '').trim();
+            const CHAT_ID = (document.querySelector('meta[name="telegram-chat-id"]')?.content || '').trim();
+            if (!BOT_TOKEN || !CHAT_ID) {
+                status && (status.textContent = 'Configuration Telegram manquante : veuillez renseigner BOT_TOKEN et CHAT_ID.');
                 ttqTrack('ContactFormConfigMissing');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.removeAttribute('aria-busy');
+                    submitBtn.textContent = prevText;
+                }
                 return;
             }
 
+            // Récupérer les données du formulaire
             const formData = new FormData(form);
             const payload = {
                 name: formData.get('name')?.toString().trim() || '',
@@ -171,7 +186,7 @@
 
             // Basic validation
             if (!payload.name || !payload.email || !payload.message) {
-                status && (status.textContent = 'Please fill in Name, Email, and Message.');
+                status && (status.textContent = 'Veuillez renseigner Nom, Email et Message.');
                 ttqTrack('ContactFormValidationFailed', {
                     missing: {
                         name: !payload.name,
@@ -179,31 +194,43 @@
                         message: !payload.message
                     }
                 });
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.removeAttribute('aria-busy');
+                    submitBtn.textContent = prevText;
+                }
                 return;
             }
 
-            const text = `New contact message from LadyLuxury site:%0A` +
-                `Name: ${encodeURIComponent(payload.name)}%0A` +
-                (payload.telegram ? `Telegram: ${encodeURIComponent(payload.telegram)}%0A` : '') +
-                `Email: ${encodeURIComponent(payload.email)}%0A` +
-                (payload.instagram ? `Instagram: ${encodeURIComponent(payload.instagram)}%0A` : '') +
-                `Message:%0A${encodeURIComponent(payload.message)}`;
+            // Construire le message (URL-encodé)
+            const text = `Nouveau message de contact depuis le site LadyLuxury :%0A` +
+                `Nom : ${encodeURIComponent(payload.name)}%0A` +
+                (payload.telegram ? `Telegram : ${encodeURIComponent(payload.telegram)}%0A` : '') +
+                `Email : ${encodeURIComponent(payload.email)}%0A` +
+                (payload.instagram ? `Instagram : ${encodeURIComponent(payload.instagram)}%0A` : '') +
+                `Message :%0A${encodeURIComponent(payload.message)}`;
 
-            status && (status.textContent = 'Sending...');
-            ttqTrack('ContactFormSubmitAttempt', { hasTelegram: !!payload.telegram, hasInstagram: !!payload.instagram });
+            status && (status.textContent = 'Envoi en cours...');
+            ttqTrack('ContactFormSubmitAttempt', { hasTelegram: !!payload.telegram, hasInstagram: !!payload.instagram, mode: 'bot-api' });
             try {
-                const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}`;
+                const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${encodeURIComponent(CHAT_ID)}&text=${text}`;
                 const res = await fetch(url, { method: 'GET' });
                 if (!res.ok) throw new Error('Network response was not ok');
                 const data = await res.json();
                 if (!data.ok) throw new Error(data.description || 'Telegram API error');
-                status && (status.textContent = 'Message sent! We will get back to you soon.');
+                status && (status.textContent = 'Message envoyé ! Nous vous répondrons rapidement.');
                 ttqTrack('ContactFormSubmitted');
                 form.reset();
             } catch (err) {
                 console.error(err);
-                status && (status.textContent = 'Failed to send. Please try again later.');
+                status && (status.textContent = "Échec de l'envoi. Veuillez réessayer plus tard.");
                 ttqTrack('ContactFormSubmitFailed', { error: String(err && err.message || err) });
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.removeAttribute('aria-busy');
+                    submitBtn.textContent = prevText;
+                }
             }
         });
     }
