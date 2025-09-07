@@ -1,4 +1,13 @@
 (function () {
+    // Safe TikTok Pixel tracking helper
+    const ttqTrack = (name, props = {}) => {
+        try {
+            if (window.ttq && typeof ttq.track === 'function') {
+                ttq.track(name, props);
+            }
+        } catch (_) { /* no-op */ }
+    };
+
     // Mobile nav toggle
     const toggle = document.querySelector('.nav-toggle');
     const menu = document.getElementById('nav-menu');
@@ -29,6 +38,16 @@
         });
     }
 
+    // Track clicks on primary "Apply" CTAs
+    const applyLinks = document.querySelectorAll('a.btn.btn-primary[href="#contact"]');
+    applyLinks.forEach((a) => {
+        a.addEventListener('click', () => {
+            const section = a.closest('section');
+            const location = section?.id || (a.closest('header') ? 'header' : 'unknown');
+            ttqTrack('ClickApply', { location });
+        });
+    });
+
     // Slider
     const slider = document.querySelector('[data-slider]');
     if (slider) {
@@ -55,6 +74,26 @@
         // Autoplay
         setInterval(() => { index = (index + 1) % slides.length; update(); }, 5000);
         update();
+    }
+
+    // Track hero video play/progress/completion
+    const heroVideo = document.querySelector('.hero-video');
+    if (heroVideo) {
+        const milestones = [25, 50, 75];
+        const seen = new Set();
+        heroVideo.addEventListener('play', () => ttqTrack('VideoPlay', { id: 'hero-video' }));
+        heroVideo.addEventListener('timeupdate', () => {
+            const dur = heroVideo.duration || 0;
+            if (!dur) return;
+            const pct = (heroVideo.currentTime / dur) * 100;
+            milestones.forEach((m) => {
+                if (pct >= m && !seen.has(m)) {
+                    seen.add(m);
+                    ttqTrack('VideoProgress', { id: 'hero-video', progress: m });
+                }
+            });
+        });
+        heroVideo.addEventListener('ended', () => ttqTrack('VideoComplete', { id: 'hero-video' }));
     }
 
     // FAQ keyboard polish (close others)
@@ -117,6 +156,7 @@
 
             if (!BOT_TOKEN || !CHAT_ID || BOT_TOKEN.includes('YOUR_') || CHAT_ID.includes('YOUR_')) {
                 status && (status.textContent = 'Configuration missing: please set Telegram BOT_TOKEN and CHAT_ID.');
+                ttqTrack('ContactFormConfigMissing');
                 return;
             }
 
@@ -132,6 +172,13 @@
             // Basic validation
             if (!payload.name || !payload.email || !payload.message) {
                 status && (status.textContent = 'Please fill in Name, Email, and Message.');
+                ttqTrack('ContactFormValidationFailed', {
+                    missing: {
+                        name: !payload.name,
+                        email: !payload.email,
+                        message: !payload.message
+                    }
+                });
                 return;
             }
 
@@ -143,6 +190,7 @@
                 `Message:%0A${encodeURIComponent(payload.message)}`;
 
             status && (status.textContent = 'Sending...');
+            ttqTrack('ContactFormSubmitAttempt', { hasTelegram: !!payload.telegram, hasInstagram: !!payload.instagram });
             try {
                 const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}`;
                 const res = await fetch(url, { method: 'GET' });
@@ -150,10 +198,12 @@
                 const data = await res.json();
                 if (!data.ok) throw new Error(data.description || 'Telegram API error');
                 status && (status.textContent = 'Message sent! We will get back to you soon.');
+                ttqTrack('ContactFormSubmitted');
                 form.reset();
             } catch (err) {
                 console.error(err);
                 status && (status.textContent = 'Failed to send. Please try again later.');
+                ttqTrack('ContactFormSubmitFailed', { error: String(err && err.message || err) });
             }
         });
     }
