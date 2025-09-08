@@ -157,7 +157,7 @@
             if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.setAttribute('aria-busy', 'true');
-                submitBtn.textContent = 'Envoi…';
+                submitBtn.textContent = 'Sending…';
             }
 
             // Utilisation directe de l'API Telegram côté client
@@ -210,7 +210,7 @@
                 (payload.instagram ? `Instagram : ${encodeURIComponent(payload.instagram)}%0A` : '') +
                 `Message :%0A${encodeURIComponent(payload.message)}`;
 
-            status && (status.textContent = 'Envoi en cours...');
+            status && (status.textContent = 'Sending...');
             ttqTrack('ContactFormSubmitAttempt', { hasTelegram: !!payload.telegram, hasInstagram: !!payload.instagram, mode: 'bot-api' });
             try {
                 const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${encodeURIComponent(CHAT_ID)}&text=${text}`;
@@ -218,7 +218,7 @@
                 if (!res.ok) throw new Error('Network response was not ok');
                 const data = await res.json();
                 if (!data.ok) throw new Error(data.description || 'Telegram API error');
-                status && (status.textContent = 'Message envoyé ! Nous vous répondrons rapidement.');
+                status && (status.textContent = 'Message sent! We will get back to you shortly.');
                 ttqTrack('ContactFormSubmitted');
                 form.reset();
             } catch (err) {
